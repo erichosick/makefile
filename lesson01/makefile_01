@@ -1,0 +1,9 @@
+add: add.o main.o
+	g++ -std=c++11 -Wextra -Wall add.o main.o -o add
+
+add.o: add.cpp
+	g++ -c -std=gnu++11 add.cpp -o add.o
+
+main.o: main.cpp
+	g++ -c -std=gnu++11 main.cpp -o main.o
+
