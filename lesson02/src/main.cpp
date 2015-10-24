@@ -1,6 +1,6 @@
 #include <iostream>
 using namespace std;
-#include "../inc/subtract.h"
+#include "subtract.h"
 
 int main() {
     cout << endl;

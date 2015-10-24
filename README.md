@@ -177,14 +177,14 @@ A variable specifies a text string value for a variable that can be substituted 
 Let's define variables.
 
 ```markdown
-CC		= g++
-CFLAGS	= -Ofast -c -std=c++11 -Wextra -Wall
+CC			= g++
+CFLAGS		= -Ofast -c -std=c++11 -Wextra -Wall
 LDFLAGS	= -std=c++11 -Wextra -Wall
-OBJ		= add.o main.o
-EXE		= add
+OBJS		= add.o main.o
+EXE			= add
 
-$(EXE): $(OBJ)
-	$(CC) $(LDFLAGS) $(OBJ) -o $(EXE)
+$(EXE): $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) -o $(EXE)
 
 add.o: add.cpp
 	$(CC) $(CFLAGS) add.cpp -o add.o
@@ -197,7 +197,7 @@ We are even able to use variables for the taget name as can be seen by the `EXE`
 
 Note: A lot of these variable names are standard conventions: for example `CC` is used to represent the compiler used.
 
-Again notice that `$(OBJ)` is replaced by the literal text `add.o main.o`.
+Again notice that `$(OBJS)` is replaced by the literal text `add.o main.o`.
 
 ## Rules - Phony Rules 
 
@@ -211,7 +211,7 @@ A **rule** that **does not** create a file is called a phony rule. By convention
 .PHONY : clean
 
 clean :
-	-rm -f $(OBJ) $(EXE)
+	-rm -f $(OBJS) $(EXE)
 ```
 
 - prefixing a rule with a `.` marks it as phony so make doesn't accidentally try to create an actual file called clean
@@ -266,27 +266,32 @@ SRC_DIR	= src
 OBJ_DIR	= obj
 ```
 
-Let's make sure make places the object files into the correct directory:
+Let's assure that make places the object files into the correct directory:
 
 ```makefile
-OBJ		= ${OBJ_DIR}/subtract.o ${OBJ_DIR}/main.o
+OBJSD		= ${OBJ_DIR}/subtract.o ${OBJ_DIR}/main.o
 ```
 
-Notice the `OBJ` deferred variable also contains a deferred variable: `OBJ_DIR`.
+Notice the `OBJSD` deferred variable also contains a deferred variable: `OBJ_DIR`.
 
 Remember, not only do we need to let make know what directories make files are in, we also need to let the linker know where the files are.
 
 g++ takes the -I flag and the location of included files.
 
 ```
-$(CC) $(LDFLAGS) -I${INC_DIR} $(OBJ) -o $(EXE)
+$(CC) $(LDFLAGS) -I${INC_DIR} $(OBJSD) -o $(EXE)
+...
+$(CC) $(CFLAGS) -I${INC_DIR} ${SRC_DIR}/main.cpp -o ${OBJ_DIR}/main.o
 ```
 
 The above converts to:
 
 ```
 g++ -std=c++11 -Wextra -Wall -Iinc obj/subtract.o obj/main2.o -o bin/subtract
+...
+g++ -Ofast -c -std=c++11 -Wextra -Wall -Iinc src/main.cpp -o obj/main.o
 ```
+
 
 The final lesson02/Makefile:
 
@@ -299,27 +304,27 @@ INC_DIR	= inc
 SRC_DIR	= src
 OBJ_DIR	= obj
 
-OBJ		= ${OBJ_DIR}/subtract.o ${OBJ_DIR}/main.o
+OBJS	= subtract.o main.o
+OBJSD	= ${OBJ_DIR}/subtract.o ${OBJ_DIR}/main.o
 EXE		= subtract
 
 vpath %.h ${INC_DIR}
 vpath %.cpp ${SRC_DIR}
 vpath %.obj ${OBJ_DIR}
 
-$(EXE): $(OBJ)
-	$(CC) $(LDFLAGS) -I${INC_DIR} $(OBJ) -o $(EXE)
+$(EXE): $(OBJS)
+	$(CC) $(LDFLAGS) -I${INC_DIR} $(OBJSD) -o $(EXE)
 
-${OBJ_DIR}/subtract.o: subtract.cpp
-	$(CC) $(CFLAGS) ${SRC_DIR}/subtract.cpp -o ${OBJ_DIR}/subtract.o
+subtract.o: subtract.cpp
+	$(CC) $(CFLAGS) -I${INC_DIR} ${SRC_DIR}/subtract.cpp -o ${OBJ_DIR}/subtract.o
 
-${OBJ_DIR}/main.o: main.cpp
-	$(CC) $(CFLAGS) ${SRC_DIR}/main.cpp -o ${OBJ_DIR}/main.o
+main.o: main.cpp
+	$(CC) $(CFLAGS) -I${INC_DIR} ${SRC_DIR}/main.cpp -o ${OBJ_DIR}/main.o
 
 .PHONY : clean
 
 clean :
-	-rm -f $(OBJ) $(EXE)
-
+	-rm -f $(OBJSD) $(EXE)
 ```
 
 Try to do the following in the lesson02 directory:
@@ -347,21 +352,63 @@ Note: To run subtract, you must prefix it with the current directory `./`. This 
 Notice in our prior make file that we had to explicity define a rule to create an object file from a cpp file.
 
 ```makefile
-${OBJ_DIR}/subtract.o: subtract.cpp
-	$(CC) $(CFLAGS) ${SRC_DIR}/subtract.cpp -o ${OBJ_DIR}/subtract.o
+multiply.o: multiply.cpp
+	$(CC) $(CFLAGS) -I${INC_DIR} ${SRC_DIR}/multiply.cpp -o ${OBJ_DIR}/multiply.o
 
-${OBJ_DIR}/main.o: main.cpp
-	$(CC) $(CFLAGS) ${SRC_DIR}/main.cpp -o ${OBJ_DIR}/main.o
+main.o: main.cpp
+	$(CC) $(CFLAGS) -I${INC_DIR} ${SRC_DIR}/main.cpp -o ${OBJ_DIR}/main.o
 ```
 
-There is still a lot of repition going on here. We are in luck because we can use patern matching in our rules.
+There is still a lot of repition going on here. We are in luck because we can use patern matching, `%` in our rules.
 
+We can convert the above to the following:
 
-// TODO: Finish lesson 3
+```makefile
+%.o: %.cpp
+	$(CC) $(CFLAGS) -I${INC_DIR} ???? -o $?????
+```
 
+So, we have a way to match multiply.cpp and main.cpp but how do we take those matches and pass them to the rule?
 
+**make** places the match on the left side of `:` with `$@` and the math on the right side of the `:` with `$<`.
 
+The final rule looks like this:
 
+```makefile
+%.o: %.cpp
+	$(CC) $(CFLAGS) -I${INC_DIR} $< -o ${OBJ_DIR}/$@
+```
+
+The final lesson03/Makefile:
+
+```
+CC		= g++
+CFLAGS	= -Ofast -c -std=c++11 -Wextra -Wall
+LDFLAGS	= -std=c++11 -Wextra -Wall
+
+INC_DIR	= inc
+SRC_DIR	= src
+OBJ_DIR	= obj
+
+OBJS	= multiply.o main.o
+OBJSD	= ${OBJ_DIR}/multiply.o ${OBJ_DIR}/main.o
+EXE		= multiply
+
+vpath %.h ${INC_DIR}
+vpath %.cpp ${SRC_DIR}
+vpath %.obj ${OBJ_DIR}
+
+$(EXE): $(OBJS)
+	$(CC) $(LDFLAGS) -I${INC_DIR} $(OBJSD) -o $(EXE)
+
+%.o: %.cpp
+	$(CC) $(CFLAGS) -I${INC_DIR} $< -o ${OBJ_DIR}/$@
+
+.PHONY : clean
+
+clean :
+	-rm -f $(OBJSD) $(EXE)
+```
 
 
 ### Running Make - Advanced
