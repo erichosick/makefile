@@ -12,7 +12,8 @@ Many conventions are used in this manual. There are other ways to accomplish the
 
 ## Other Resources
 
-For a complete manual on make check out [the make manual][make-the-manual].
+- [The make manual][make-the-manual]: Complete manual on make
+- [Generic Makefile][generic-makefile]: A generic makefile
 
 
 ## Requirements
@@ -198,6 +199,10 @@ We are even able to use variables for the taget name as can be seen by the `EXE`
 Note: A lot of these variable names are standard conventions: for example `CC` is used to represent the compiler used.
 
 Again notice that `$(OBJS)` is replaced by the literal text `add.o main.o`.
+
+### Resources
+
+[Clear explanation of variable assignment in Makefiles][makefile-variable-assignment]
 
 ## Rules - Phony Rules 
 
@@ -480,7 +485,9 @@ Notice main.o is no longer on the same line as add.o but it is still a prerequis
 - 3.3 Including Other Makefiles
 
 [make-the-manual]: https://www.gnu.org/software/make/manual/make.html
+[generic-makefile]: https://github.com/mbcrawfo/GenericMakefile
 [git-fork]: https://github.com/mechanisms/makefile#fork-destination-box
 [makefile-and-directories]: https://stackoverflow.com/questions/1814270/gcc-g-option-to-place-all-object-files-into-separate-directory
+[makefile-variable-assignment]: https://stackoverflow.com/questions/448910/makefile-variable-assignment
 
 
